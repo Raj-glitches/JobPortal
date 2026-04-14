@@ -1,14 +1,32 @@
 const Job = require('../models/Job');
 const User = require('../models/User');
-const Application = require('../models/Application');\nconst Notification = require('../models/Notification');\nconst jobService = require('../services/jobService');
+const Application = require('../models/Application');
+const Notification = require('../models/Notification');
+const jobService = require('../services/jobService');
 
 // Get all jobs (with filters)
 exports.getJobs = async (req, res, next) => {
   try {
-  const {\n    page = 1,\n    limit = 10,\n    search,\n    location,\n    jobType,\n    experience,\n    salaryMin,\n    salaryMax,\n    skills,\n    source = 'all',\n    sort = '-createdAt'\n  } = req.query;\n\n  // Build query\n  let query = { status: 'approved' };\n\n  if (source !== 'all') {\n    query.source = source === 'external' ? 'jsearch' : 'internal';\n  }
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      location,
+      jobType,
+      experience,
+      salaryMin,
+      salaryMax,
+      skills,
+      source = 'all',
+      sort = '-createdAt'
+    } = req.query;
 
     // Build query
     const query = { status: 'approved' };
+
+    if (source !== 'all') {
+      query.source = source === 'external' ? 'jsearch' : 'internal';
+    }
 
     if (search) {
       query.$text = { $search: search };
@@ -27,8 +45,8 @@ exports.getJobs = async (req, res, next) => {
     }
 
     if (salaryMin || salaryMax) {
-      query['salary.min'] = { $gte: salaryMin || 0 };
-      query['salary.max'] = { $lte: salaryMax || Number.MAX_VALUE };
+      query['salary.min'] = { $gte: Number(salaryMin || 0) };
+      query['salary.max'] = { $lte: Number(salaryMax || Number.MAX_VALUE) };
     }
 
     if (skills) {
@@ -39,7 +57,19 @@ exports.getJobs = async (req, res, next) => {
     // Pagination
     const skip = (parseInt(page) - 1) * parseInt(limit);
 
-    let jobsQuery = Job.find(query).populate('company', 'companyName companyLogo companyDetails');\n\n    // Text score sort for relevance\n    if (search && sort === 'relevance') {\n      jobsQuery = Job.aggregate([\n        { $match: query },\n        { $addFields: { score: { $meta: 'textScore' } } },\n        { $sort: { score: { $meta: 'textScore' } } },\n        { $skip: skip },\n        { $limit: parseInt(limit) },\n        { $lookup: { from: 'users', localField: 'company', foreignField: '_id', as: 'company' } },\n        { $unwind: { path: '$company', preserveNullAndEmptyArrays: true } },\n        { $project: { company: { companyName: 1, companyLogo: 1, companyDetails: 1 } } }\n      ]);\n      const jobs = await jobsQuery;\n      const total = await Job.countDocuments(query);\n    } else {\n      jobsQuery = jobsQuery.sort(sort).skip(skip).limit(parseInt(limit));\n      const jobs = await jobsQuery;\n      const total = await Job.countDocuments(query);\n    }
+    let jobsQuery = Job.find(query).populate('company', 'companyName companyLogo companyDetails');
+
+    // Text score sort for relevance
+    if (search && sort === 'relevance') {
+      jobsQuery.sort({ score: { $meta: 'textScore' } });
+    } else {
+      jobsQuery.sort(sort);
+    }
+
+    jobsQuery = jobsQuery.skip(skip).limit(parseInt(limit));
+
+    const jobs = await jobsQuery.exec();
+    const total = await Job.countDocuments(query);
 
     res.status(200).json({
       success: true,
@@ -291,5 +321,41 @@ exports.getRecentJobs = async (req, res, next) => {
   }
 };
 
-// Fetch external jobs (admin/recruiter)\nexports.fetchExternalJobs = async (req, res, next) => {\n  try {\n    const { force = 'false', limit = '20' } = req.query;\n    const result = await jobService.fetchAndRefreshExternalJobs(force === 'true', parseInt(limit));\n    res.status(200).json({\n      success: true,\n      ...result\n    });\n  } catch (error) {\n    next(error);\n  }\n};\n\n// Get recommended jobs (for job seekers)\nexports.getRecommendedJobs = async (req, res, next) => {\n  try {\n    const user = await User.findById(req.user.id);\n    \n    const recommendedJobs = await Job.find({\n      status: 'approved',\n      skills: { $in: user.skills },\n      _id: { $nin: await Application.distinct('job', { applicant: req.user.id }) }\n    })\n      .populate('company', 'companyName companyLogo')\n      .sort('-createdAt')\n      .limit(10);\n\n    res.status(200).json({\n      success: true,\n      count: recommendedJobs.length,\n      data: recommendedJobs\n    });\n  } catch (error) {\n    next(error);\n  }\n};\n
+// Fetch external jobs (admin/recruiter)
+exports.fetchExternalJobs = async (req, res, next) => {
+  try {
+    const { force = 'false', limit = '20' } = req.query;
+    const result = await jobService.fetchAndRefreshExternalJobs(force === 'true', parseInt(limit));
+    res.status(200).json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// Get recommended jobs (for job seekers)
+exports.getRecommendedJobs = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    const recommendedJobs = await Job.find({
+      status: 'approved',
+      skills: { $in: user.skills || [] },
+      _id: { $nin: await Application.distinct('job', { applicant: req.user.id }) }
+    })
+      .populate('company', 'companyName companyLogo')
+      .sort('-createdAt')
+      .limit(10);
+
+    res.status(200).json({
+      success: true,
+      count: recommendedJobs.length,
+      data: recommendedJobs
+    });
+  } catch (error) {
+    next(error);
+  }
+};
 

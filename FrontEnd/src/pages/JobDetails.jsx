@@ -10,7 +10,7 @@ const JobDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, isJobSeeker, user } = useAuth();
-  
+
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
   const [applying, setApplying] = useState(false);
@@ -115,7 +115,7 @@ const JobDetails = () => {
                 <div className="flex-1">
                   <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">{job.title}</h1>
                   <p className="text-lg text-gray-600 dark:text-gray-400">{job.companyName}</p>
-                  
+
                   <div className="flex flex-wrap gap-4 mt-3 text-sm text-gray-500 dark:text-gray-400">
                     <span className="flex items-center gap-1">
                       <FiMapPin /> {job.location}
@@ -133,10 +133,18 @@ const JobDetails = () => {
                 </div>
               </div>
 
-              {/* Tags */}
+              {/* Tags & Source */}
               <div className="flex flex-wrap gap-2 mb-6">
+                {job.source && job.source !== 'internal' && (
+                  <span className="badge badge-secondary flex items-center gap-1">
+                    <FiGlobe /> {job.source.toUpperCase()}
+                  </span>
+                )}
+
                 {job.skills?.map((skill) => (
-                  <span key={skill} className="badge badge-primary">{skill}</span>
+                  <span key={skill} className="badge badge-primary">
+                    {skill}
+                  </span>
                 ))}
               </div>
 
@@ -205,23 +213,46 @@ const JobDetails = () => {
                   <div className="w-16 h-16 mx-auto mb-4 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
                     <FiBriefcase className="w-8 h-8 text-green-600" />
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Applied Successfully!</h3>
-                  <p className="text-gray-500 dark:text-gray-400 text-sm">Your application has been submitted. Track status in your dashboard.</p>
-                  <Link to="/dashboard" className="btn btn-primary w-full mt-4">View Applications</Link>
+
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    Applied Successfully!
+                  </h3>
+
+                  <p className="text-gray-500 dark:text-gray-400 text-sm">
+                    Your application has been submitted. Track status in your dashboard.
+                  </p>
+
+                  <Link to="/dashboard" className="btn btn-primary w-full mt-4">
+                    View Applications
+                  </Link>
                 </div>
               ) : (
                 <>
-                  <button
-                    onClick={handleApply}
-                    disabled={applying || !isAuthenticated}
-                    className="btn btn-primary w-full py-3 mb-4"
-                  >
-                    {applying ? 'Applying...' : 'Apply Now'}
-                  </button>
+                  {job.applyLink ? (
+                    <a
+                      href={job.applyLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-primary w-full py-3 mb-4"
+                    >
+                      Apply on {job.source?.toUpperCase()}
+                    </a>
+                  ) : (
+                    <button
+                      onClick={handleApply}
+                      disabled={applying || !isAuthenticated}
+                      className="btn btn-primary w-full py-3 mb-4"
+                    >
+                      {applying ? 'Applying...' : 'Apply Now'}
+                    </button>
+                  )}
 
                   {!isAuthenticated && (
                     <p className="text-sm text-center text-gray-500 mb-4">
-                      <Link to="/login" className="text-primary-600 hover:underline">Login</Link> to apply for this job
+                      <Link to="/login" className="text-primary-600 hover:underline">
+                        Login
+                      </Link>{' '}
+                      to apply for this job
                     </p>
                   )}
                 </>
@@ -256,7 +287,7 @@ const JobDetails = () => {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 

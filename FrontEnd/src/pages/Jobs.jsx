@@ -1,11 +1,39 @@
-import { useState, useEffect, useCallback, useRef } from 'react';\n import { Link, useSearchParams } from 'react-router-dom';\n import { motion } from 'framer-motion';\n import toast from 'react-hot-toast';\n import ReactPaginate from 'react-paginate';\n import InfiniteScroll from 'react-infinite-scroll-component';\n import { FiMapPin, FiSearch, FiFilter, FiBriefcase, FiClock, FiDollarSign, FiDownload, FiGlobe } from 'react-icons/fi';\n import { jobAPI, userAPI } from '../services/api';\n import { useAuth } from '../context/AuthContext';\n import useDebounce from '../hooks/useDebounce';\n import JobSkeleton from '../components/common/JobSkeleton';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import toast from 'react-hot-toast';
+import ReactPaginate from 'react-paginate';
+import InfiniteScroll from 'react-infinite-scroll-component';
+import {
+  FiMapPin,
+  FiSearch,
+  FiFilter,
+  FiBriefcase,
+  FiClock,
+  FiDollarSign,
+  FiDownload,
+  FiGlobe
+} from 'react-icons/fi';
+import { jobAPI, userAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
+import useDebounce from '../hooks/useDebounce';
+import JobSkeleton from '../components/common/JobSkeleton';
 
 const Jobs = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, limit: 10, total: 0, totalPages: 0 });
-const [filters, setFilters] = useState({\n    search: searchParams.get('search') || '',\n    location: searchParams.get('location') || '',\n    jobType: searchParams.get('jobType') || '',\n    experience: searchParams.get('experience') || '',\n    source: searchParams.get('source') || 'all',\n    sort: searchParams.get('sort') || 'latest',\n    salaryMin: '',\n    salaryMax: ''\n  });\n  const [infiniteScroll, setInfiniteScroll] = useState(false);
+  const [filters, setFilters] = useState({
+    search: searchParams.get('search') || '',
+    location: searchParams.get('location') || '',
+    jobType: searchParams.get('jobType') || '',
+    experience: searchParams.get('experience') || '',
+    source: searchParams.get('source') || 'all',
+    sort: searchParams.get('sort') || 'latest',
+    salaryMin: '',
+    salaryMax: ''
+  });
   const [showFilters, setShowFilters] = useState(false);
   const { isAuthenticated, isJobSeeker } = useAuth();
 
@@ -36,7 +64,7 @@ const [filters, setFilters] = useState({\n    search: searchParams.get('search')
       Object.keys(params).forEach(key => {
         if (!params[key]) delete params[key];
       });
-      
+
       const response = await jobAPI.getJobs(params);
       setJobs(response.data.data);
       setPagination(prev => ({
@@ -228,7 +256,7 @@ const [filters, setFilters] = useState({\n    search: searchParams.get('search')
                           {job.title}
                         </h3>
                         <p className="text-gray-600 dark:text-gray-400">{job.companyName}</p>
-                        
+
                         <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-500 dark:text-gray-400">
                           <span className="flex items-center gap-1">
                             <FiMapPin /> {job.location}

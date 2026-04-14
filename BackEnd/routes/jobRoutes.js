@@ -1,1 +1,46 @@
-const express = require('express');\nconst router = express.Router();\nconst { \n  getJobs, \n  getJob, \n  createJob, \n  updateJob, \n  deleteJob,\n  fetchExternalJobs,\n  getMyJobs,\n  getJobApplicants,\n  getFeaturedJobs,\n  getRecentJobs,\n  getRecommendedJobs\n} = require('../controllers/jobController');\nconst { protect, optionalAuth, authorize } = require('../middleware/authMiddleware');\n\n// Public routes\nrouter.get('/featured', getFeaturedJobs);\nrouter.get('/recent', getRecentJobs);\nrouter.get('/', optionalAuth, getJobs);\nrouter.get('/search', optionalAuth, getJobs);\nrouter.get('/:id', optionalAuth, getJob);\n\n// Protected routes - Job Seekers\nrouter.get('/user/recommended', protect, getRecommendedJobs);\n\n// External jobs fetch (admin/recruiter)\nrouter.post('/fetch', protect, authorize('recruiter', 'admin'), fetchExternalJobs);\n\n// Protected routes - Recruiters\nrouter.post('/', protect, authorize('recruiter', 'admin'), createJob);\nrouter.put('/:id', protect, authorize('recruiter', 'admin'), updateJob);\nrouter.delete('/:id', protect, authorize('recruiter', 'admin'), deleteJob);\nrouter.get('/recruiter/my-jobs', protect, authorize('recruiter', 'admin'), getMyJobs);\nrouter.get('/recruiter/:jobId/applicants', protect, authorize('recruiter', 'admin'), getJobApplicants);\n\nmodule.exports = router;\n
+const express = require('express');
+const router = express.Router();
+
+const {
+  getJobs,
+  getJob,
+  createJob,
+  updateJob,
+  deleteJob,
+  fetchExternalJobs,
+  getMyJobs,
+  getJobApplicants,
+  getFeaturedJobs,
+  getRecentJobs,
+  getRecommendedJobs
+} = require('../controllers/jobController');
+
+const { protect, optionalAuth, authorize } = require('../middleware/authMiddleware');
+
+
+// ✅ Public routes
+router.get('/featured', getFeaturedJobs);
+router.get('/recent', getRecentJobs);
+router.get('/', optionalAuth, getJobs);
+router.get('/search', optionalAuth, getJobs);
+router.get('/:id', optionalAuth, getJob);
+
+
+// ✅ Job Seeker routes
+router.get('/user/recommended', protect, getRecommendedJobs);
+
+
+// ✅ External API fetch
+router.post('/fetch', protect, authorize('recruiter', 'admin'), fetchExternalJobs);
+
+
+// ✅ Recruiter routes
+router.post('/', protect, authorize('recruiter', 'admin'), createJob);
+router.put('/:id', protect, authorize('recruiter', 'admin'), updateJob);
+router.delete('/:id', protect, authorize('recruiter', 'admin'), deleteJob);
+
+router.get('/recruiter/my-jobs', protect, authorize('recruiter', 'admin'), getMyJobs);
+router.get('/recruiter/:jobId/applicants', protect, authorize('recruiter', 'admin'), getJobApplicants);
+
+
+module.exports = router;

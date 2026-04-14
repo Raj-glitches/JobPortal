@@ -70,7 +70,20 @@ export const userAPI = {
   getPublicProfile: (userId) => api.get(`/users/public/${userId}`)
 };
 
-// Job APIs\nexport const jobAPI = {\n  getJobs: (params) => api.get('/jobs', { params }),\n  getJob: (id) => api.get(`/jobs/${id}`),\n  fetchJobs: () => api.post('/jobs/fetch'),\n  createJob: (data) => api.post('/jobs', data),\n  updateJob: (id, data) => api.put(`/jobs/${id}`, data),\n  deleteJob: (id) => api.delete(`/jobs/${id}`),\n  getMyJobs: () => api.get('/jobs/recruiter/my-jobs'),\n  getJobApplicants: (jobId) => api.get(`/jobs/recruiter/${jobId}/applicants`),\n  getFeaturedJobs: () => api.get('/jobs/featured'),\n  getRecentJobs: () => api.get('/jobs/recent'),\n  getRecommendedJobs: () => api.get('/jobs/user/recommended')\n};
+// Job APIs
+export const jobAPI = {
+  getJobs: (params) => api.get('/jobs', { params }),
+  getJob: (id) => api.get(`/jobs/${id}`),
+  fetchJobs: () => api.post('/jobs/fetch'),
+  createJob: (data) => api.post('/jobs', data),
+  updateJob: (id, data) => api.put(`/jobs/${id}`, data),
+  deleteJob: (id) => api.delete(`/jobs/${id}`),
+  getMyJobs: () => api.get('/jobs/recruiter/my-jobs'),
+  getJobApplicants: (jobId) => api.get(`/jobs/recruiter/${jobId}/applicants`),
+  getFeaturedJobs: () => api.get('/jobs/featured'),
+  getRecentJobs: () => api.get('/jobs/recent'),
+  getRecommendedJobs: () => api.get('/jobs/user/recommended')
+};
 
 // Application APIs
 export const applicationAPI = {

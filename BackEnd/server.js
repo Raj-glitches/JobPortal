@@ -1,13 +1,28 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const morgan = require('morgan');\nconst rateLimit = require('express-rate-limit');\nconst cron = require('node-cron');\nconst jobService = require('./services/jobService');\nconst dotenv = require('dotenv');\nconst connectDB = require('./config/db');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
+const cron = require('node-cron');
+const { seedDatabase } = require('./utils/seeder');
+const dotenv = require('dotenv');
+const connectDB = require('./config/db');
 
 // Load environment variables
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
+// Connect to MongoDB and seed
+connectDB()
+  .then(async () => {
+    console.log('Connected to DB, seeding data...');
+
+    await seedDatabase();
+
+    console.log('Database seeded successfully');
+  })
+  .catch((err) => {
+    console.error('DB connection error:', err);
+  });
 
 const app = express();
 
@@ -67,7 +82,25 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 5000;\n\n// Cron job to refresh external jobs every 6 hours\ncron.schedule('0 */6 * * *', async () => {\n  console.log('Running external jobs refresh cron job...');\n  try {\n    const result = await jobService.fetchAndRefreshExternalJobs(true);\n    console.log('Cron job completed:', result);\n  } catch (error) {\n    console.error('Cron job error:', error);\n  }\n});\n\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n  console.log('External jobs cron scheduled (every 6 hours)');\n});
+const PORT = process.env.PORT || 5000;
+
+// Cron job to refresh external jobs every 6 hours
+cron.schedule('0 */6 * * *', async () => {
+  console.log('Running external jobs refresh cron job...');
+  
+  try {
+    const result = await jobService.fetchAndRefreshExternalJobs(true);
+    console.log('Cron job completed:', result);
+  } catch (error) {
+    console.error('Cron job error:', error);
+  }
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log('External jobs cron scheduled (every 6 hours)');
+});
 
 module.exports = app;
 
