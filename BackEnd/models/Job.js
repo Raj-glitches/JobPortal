@@ -82,14 +82,9 @@ const jobSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
   },
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  }
-});
+  updatedAt: {\n    type: Date,\n    default: Date.now\n  },\n  // External API fields\n  externalId: {\n    type: String,\n    unique: true,\n    sparse: true,\n    index: true\n  },\n  source: {\n    type: String,\n    default: 'internal',\n    enum: ['internal', 'jsearch', 'adzuna', 'remotive']\n  },\n  applyLink: {\n    type: String\n  },\n  postedDate: {\n    type: Date\n  }\n});
 
-// Index for search
-jobSchema.index({ title: 'text', description: 'text', skills: 'text', location: 'text' });
+// Index for search\njobSchema.index({ title: 'text', description: 'text', skills: 'text', location: 'text' });\n\n// External job indexes\njobSchema.index({ externalId: 1 }, { unique: true, sparse: true });\njobSchema.index({ location: 1, jobType: 1 });\njobSchema.index({ source: 1, postedDate: -1 });
 
 // Set expiration
 jobSchema.pre('save', function(next) {

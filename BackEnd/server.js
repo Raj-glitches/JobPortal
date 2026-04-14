@@ -1,10 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-const dotenv = require('dotenv');
-const connectDB = require('./config/db');
+const morgan = require('morgan');\nconst rateLimit = require('express-rate-limit');\nconst cron = require('node-cron');\nconst jobService = require('./services/jobService');\nconst dotenv = require('dotenv');\nconst connectDB = require('./config/db');
 
 // Load environment variables
 dotenv.config();
@@ -70,11 +67,7 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000;\n\n// Cron job to refresh external jobs every 6 hours\ncron.schedule('0 */6 * * *', async () => {\n  console.log('Running external jobs refresh cron job...');\n  try {\n    const result = await jobService.fetchAndRefreshExternalJobs(true);\n    console.log('Cron job completed:', result);\n  } catch (error) {\n    console.error('Cron job error:', error);\n  }\n});\n\napp.listen(PORT, () => {\n  console.log(`Server running on port ${PORT}`);\n  console.log('External jobs cron scheduled (every 6 hours)');\n});
 
 module.exports = app;
 
