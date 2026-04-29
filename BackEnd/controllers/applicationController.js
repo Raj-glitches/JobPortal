@@ -7,7 +7,24 @@ const Notification = require('../models/Notification');
 exports.applyForJob = async (req, res, next) => {
   try {
     const { jobId } = req.params;
-    const { coverLetter, resume } = req.body;
+    const applicant = req.user.id;
+
+    const { coverLetter } = req.body;
+    let resumeData = {};
+
+    // Handle uploaded resume
+    if (req.file) {
+      resumeData = {
+        url: req.file.path,
+        publicId: req.file.filename
+      };
+    } else {
+      // Get existing user resume
+      const user = await User.findById(applicant);
+      if (user && user.resume) {
+        resumeData = user.resume;
+      }
+    }
 
     const job = await Job.findById(jobId);
 
@@ -17,6 +34,7 @@ exports.applyForJob = async (req, res, next) => {
         message: 'Job not found'
       });
     }
+
 
     if (job.status !== 'approved') {
       return res.status(400).json({
@@ -38,22 +56,19 @@ exports.applyForJob = async (req, res, next) => {
       });
     }
 
-    // Get user's resume
-    const user = await User.findById(req.user.id);
-    const userResume = resume || user.resume;
-
     // Create application
     const application = await Application.create({
       job: jobId,
-      applicant: req.user.id,
+      applicant: applicant,
       coverLetter,
-      resume: userResume
+      resume: resumeData
     });
 
     // Update job applicants
     job.applicants.push(application._id);
     await job.save();
 
+    const user = await User.findById(applicant);
     // Create notification for recruiter
     await Notification.create({
       user: job.company,

@@ -7,6 +7,7 @@ const cron = require('node-cron');
 const { seedDatabase } = require('./utils/seeder');
 const dotenv = require('dotenv');
 const connectDB = require('./config/db');
+const jobService = require('./services/jobService');
 
 // Load environment variables
 dotenv.config();

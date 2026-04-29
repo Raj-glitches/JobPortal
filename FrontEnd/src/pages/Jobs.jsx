@@ -155,7 +155,7 @@ const Jobs = () => {
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
-              className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-4 gap-4"
+              className="mt-4 pt-4 border-t grid grid-cols-1 md:grid-cols-3 gap-3"
             >
               <div>
                 <label className="label">Job Type</label>
@@ -196,7 +196,7 @@ const Jobs = () => {
                   className="input"
                 />
               </div>
-              <div>
+              {/* <div>
                 <label className="label">Max Salary (LPA)</label>
                 <input
                   type="number"
@@ -206,7 +206,7 @@ const Jobs = () => {
                   onChange={handleFilterChange}
                   className="input"
                 />
-              </div>
+              </div> */}
             </motion.div>
           )}
         </div>

@@ -13,7 +13,8 @@ const {
 const { protect, authorize } = require('../middleware/authMiddleware');
 
 // Job seeker routes
-router.post('/job/:jobId', protect, authorize('jobseeker'), applyForJob);
+const { uploadResume } = require('../middleware/uploadMiddleware');
+router.post('/job/:jobId', protect, authorize('jobseeker'), uploadResume, applyForJob);
 router.get('/my', protect, authorize('jobseeker'), getMyApplications);
 router.get('/job/:jobId/status', protect, authorize('jobseeker'), getMyApplicationStatus);
 router.delete('/:applicationId', protect, authorize('jobseeker'), withdrawApplication);

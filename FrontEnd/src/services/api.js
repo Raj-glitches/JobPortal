@@ -39,14 +39,14 @@ api.interceptors.response.use(
 
 // Auth APIs
 export const authAPI = {
-  sendOTP: (mobile, purpose) => api.post('/auth/send-otp', { mobile, purpose }),
-  verifyOTP: (mobile, otp, purpose) => api.post('/auth/verify-otp', { mobile, otp, purpose }),
+  sendOTP: (email, purpose) => api.post('/auth/send-otp', { email, purpose }),
+  verifyOTP: (email, otp, purpose) => api.post('/auth/verify-otp', { email, otp, purpose }),
   register: (data) => api.post('/auth/register', data),
-  login: (mobile, otp) => api.post('/auth/login', { mobile, otp }),
-  loginWithPassword: (mobile, password) => api.post('/auth/login-password', { mobile, password }),
+  login: (email, otp) => api.post('/auth/login', { email, otp }),
+  loginWithPassword: (email, password) => api.post('/auth/login-password', { email, password }),
   googleAuth: (tokenId) => api.post('/auth/google', { tokenId }),
-  forgotPassword: (mobile) => api.post('/auth/forgot-password', { mobile }),
-  resetPassword: (mobile, otp, password) => api.post('/auth/reset-password', { mobile, otp, password }),
+  forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+  resetPassword: (email, otp, password) => api.post('/auth/reset-password', { email, otp, password }),
   getMe: () => api.get('/auth/me'),
   updatePassword: (currentPassword, newPassword) => api.put('/auth/update-password', { currentPassword, newPassword })
 };
@@ -87,7 +87,11 @@ export const jobAPI = {
 
 // Application APIs
 export const applicationAPI = {
-  applyForJob: (jobId, data) => api.post(`/applications/job/${jobId}`, data),
+  applyForJob: (jobId, data) => api.post(`/applications/job/${jobId}`, data, {
+    headers: { 
+      'Content-Type': 'multipart/form-data'
+    }
+  }),
   getMyApplications: () => api.get('/applications/my'),
   getApplicationStatus: (jobId) => api.get(`/applications/job/${jobId}/status`),
   getJobApplicants: (jobId) => api.get(`/applications/job/${jobId}/applicants`),

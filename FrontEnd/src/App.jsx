@@ -1,23 +1,36 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+
 import Navbar from './components/common/Navbar';
+
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Jobs from './pages/Jobs';
 import JobDetails from './pages/JobDetails';
+import Profile from './pages/Profile';
+
 import UserDashboard from './pages/UserDashboard';
 import RecruiterDashboard from './pages/RecruiterDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+
 import About from './pages/About';
 import Contact from './pages/Contact';
+import JobApplicants from './pages/JobApplicants';
+import Notifications from './pages/Notifications';
+
+
+
+
 
 // Protected Route Component
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { isAuthenticated, user, loading } = useAuth();
 
+  // Loading Screen
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -26,10 +39,12 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
     );
   }
 
+  // Not Logged In
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
+  // Role Check
   if (allowedRoles && !allowedRoles.includes(user?.role)) {
     return <Navigate to="/dashboard" replace />;
   }
@@ -37,7 +52,8 @@ const ProtectedRoute = ({ children, allowedRoles }) => {
   return children;
 };
 
-// Dashboard Router - redirects based on role
+
+// Dashboard Router
 const DashboardRouter = () => {
   const { user, isAuthenticated, loading } = useAuth();
 
@@ -56,52 +72,115 @@ const DashboardRouter = () => {
   switch (user?.role) {
     case 'admin':
       return <AdminDashboard />;
+
     case 'recruiter':
       return <RecruiterDashboard />;
+
     default:
       return <UserDashboard />;
   }
 };
 
+
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
+
         <Router>
+
           <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
+
+            {/* Navbar */}
             <Navbar />
+
+            {/* Routes */}
             <Routes>
+
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
+
               <Route path="/login" element={<Login />} />
+
               <Route path="/register" element={<Register />} />
+
               <Route path="/jobs" element={<Jobs />} />
+
               <Route path="/jobs/:id" element={<JobDetails />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
-
-              {/* Protected Routes */}
-              <Route path="/dashboard" element={<DashboardRouter />} />
-              <Route path="/user/dashboard" element={
-                <ProtectedRoute allowedRoles={['jobseeker']}>
-                  <UserDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/recruiter/dashboard" element={
-                <ProtectedRoute allowedRoles={['recruiter', 'admin']}>
-                  <RecruiterDashboard />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin/dashboard" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboard />
+              <Route path="/notifications" element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               } />
 
-              {/* Fallback */}
-              <Route path="*" element={<Navigate to="/" replace />} />
+              {/* Job Applicants Page */}
+              <Route
+                path="/recruiter/job-applicants/:jobId"
+                element={
+                  <ProtectedRoute allowedRoles={['recruiter']}>
+                    <JobApplicants />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Protected Dashboard Route */}
+
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <DashboardRouter />
+                  </ProtectedRoute>
+                }
+              />
+
+
+              {/* Profile Route */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <Profile />
+                  </ProtectedRoute>
+                }
+              />
+
+
+              {/* Recruiter Dashboard */}
+              <Route
+                path="/recruiter/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['recruiter', 'admin']}>
+                    <RecruiterDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+
+              {/* Admin Dashboard */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute allowedRoles={['admin']}>
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+
+
+              {/* Fallback Route */}
+              <Route
+                path="*"
+                element={<Navigate to="/" replace />}
+              />
+
             </Routes>
-            <Toaster 
+
+
+            {/* Toast Notifications */}
+            <Toaster
               position="top-right"
               toastOptions={{
                 duration: 3000,
@@ -109,12 +188,14 @@ function App() {
                   background: '#333',
                   color: '#fff',
                 },
+
                 success: {
                   iconTheme: {
                     primary: '#10b981',
                     secondary: '#fff',
                   },
                 },
+
                 error: {
                   iconTheme: {
                     primary: '#ef4444',
@@ -123,12 +204,14 @@ function App() {
                 },
               }}
             />
+
           </div>
+
         </Router>
+
       </AuthProvider>
     </ThemeProvider>
   );
 }
 
 export default App;
-

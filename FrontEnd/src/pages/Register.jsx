@@ -13,7 +13,6 @@ const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    mobile: '',
     password: '',
     confirmPassword: '',
     role: defaultRole
@@ -31,7 +30,7 @@ const Register = () => {
   const handleSendOTP = async (e) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.email || !formData.mobile || !formData.password) {
+    if (!formData.name || !formData.email || !formData.password) {
       toast.error('Please fill in all fields');
       return;
     }
@@ -41,15 +40,10 @@ const Register = () => {
       return;
     }
 
-    if (formData.mobile.length !== 10) {
-      toast.error('Please enter a valid 10-digit mobile number');
-      return;
-    }
-
     setLoading(true);
     try {
-      await authAPI.sendOTP(formData.mobile, 'register');
-      toast.success('OTP sent to your mobile number');
+      await authAPI.sendOTP(formData.email, 'register');
+      toast.success('OTP sent to your email');
       setStep(2);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to send OTP');
@@ -67,8 +61,9 @@ const Register = () => {
 
     setLoading(true);
     try {
+      const { confirmPassword, ...dataToSend } = formData;
       await register({
-        ...formData,
+        ...dataToSend,
         otp
       });
       toast.success('Registration successful!');
@@ -117,7 +112,7 @@ const Register = () => {
           </div>
 
           {/* Forms */}
-          {step === 1 ? (
+          { step === 1 ? (
             <form onSubmit={handleSendOTP}>
               <div className="mb-4">
                 <label className="label">Full Name</label>
@@ -146,23 +141,6 @@ const Register = () => {
                     value={formData.email}
                     onChange={handleChange}
                     className="input pl-12"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="label">Mobile Number</label>
-                <div className="relative">
-                  <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input
-                    type="tel"
-                    name="mobile"
-                    placeholder="Enter 10-digit mobile number"
-                    value={formData.mobile}
-                    onChange={(e) => handleChange({ target: { name: 'mobile', value: e.target.value.replace(/\D/g, '').slice(0, 10) } })}
-                    className="input pl-12"
-                    maxLength={10}
                     required
                   />
                 </div>
@@ -230,7 +208,7 @@ const Register = () => {
                     maxLength={6}
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-2">OTP sent to {formData.mobile}</p>
+                <p className="text-sm text-gray-500 mt-2">OTP sent to {formData.email}</p>
               </div>
 
               <button

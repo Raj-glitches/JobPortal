@@ -6,49 +6,73 @@ const jwt = require('jsonwebtoken');
 // Initialize Google OAuth client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Send OTP to mobile number
+// Send OTP to email
+const { sendOTP } = require('../utils/emailService');
+
 exports.sendOTP = async (req, res, next) => {
   try {
-    const { mobile, purpose } = req.body;
+    const { email, purpose } = req.body;
+    const ip = req.ip || req.connection.remoteAddress;
 
-    if (!mobile || !purpose) {
+    if (!email || !purpose) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide mobile number and purpose'
+        message: 'Please provide email and purpose'
       });
     }
 
-    // Validate mobile format
-    if (!/^[6-9]\d{9}$/.test(mobile)) {
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide a valid mobile number'
+        message: 'Please provide a valid email address'
       });
     }
 
     // Check if user exists for register purpose
     if (purpose === 'register') {
-      const existingUser = await User.findOne({ mobile });
+      const existingUser = await User.findOne({ email });
       if (existingUser) {
         return res.status(400).json({
           success: false,
-          message: 'Mobile number already registered'
+          message: 'Email already registered'
         });
       }
     }
 
-    // Generate and save OTP
-    const otpLog = await OTPLog.createOTP(mobile, purpose);
+    // For login purpose, ensure user exists
+    if (purpose === 'login') {
+      const existingUser = await User.findOne({ email });
+      if (!existingUser) {
+        return res.status(400).json({
+          success: false,
+          message: 'No account found with this email. Please register first.'
+        });
+      }
+      if (existingUser.isBlocked) {
+        return res.status(403).json({
+          success: false,
+          message: 'Your account has been blocked'
+        });
+      }
+    }
 
-    // In production, send OTP via Twilio or Firebase
-    // For development, return OTP in response
-    console.log(`OTP for ${mobile}: ${otpLog.otp}`);
+    // Generate OTP but DO NOT save to DB yet
+    const otpLog = await OTPLog.createOTP(email, purpose, ip);
+
+    // Send OTP via email — if this fails, clean up the OTP record
+    try {
+      await sendOTP(email, otpLog.otp);
+    } catch (emailError) {
+      // Delete the created OTP record so user can retry without rate-limit
+      await OTPLog.deleteOne({ _id: otpLog._id });
+      throw new Error('Failed to send OTP email. Please try again.');
+    }
 
     res.status(200).json({
       success: true,
-      message: 'OTP sent successfully',
-      // Remove this in production
-      otp: otpLog.otp
+      message: 'OTP sent successfully to your email'
     });
   } catch (error) {
     next(error);
@@ -58,43 +82,47 @@ exports.sendOTP = async (req, res, next) => {
 // Verify OTP
 exports.verifyOTP = async (req, res, next) => {
   try {
-    const { mobile, otp, purpose } = req.body;
+    const { email, otp, purpose } = req.body;
 
-    if (!mobile || !otp || !purpose) {
+    if (!email || !otp || !purpose) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide mobile, OTP and purpose'
+        message: 'Please provide email, OTP and purpose'
       });
     }
 
-    await OTPLog.verifyOTP(mobile, otp, purpose);
+    await OTPLog.verifyOTP(email, otp, purpose);
 
     res.status(200).json({
       success: true,
       message: 'OTP verified successfully'
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    next(error);
   }
 };
 
 // Register new user
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, mobile, password, role, otp } = req.body;
+    const { name, email, password, role, otp } = req.body;
+
+    if (!name || !email || !password || !otp) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide name, email, password and OTP'
+      });
+    }
 
     // Verify OTP first
-    await OTPLog.verifyOTP(mobile, otp, 'register');
+    await OTPLog.verifyOTP(email, otp, 'register');
 
     // Check if user exists
-    const existingUser = await User.findOne({ $or: [{ email }, { mobile }] });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({
         success: false,
-        message: 'User already exists with this email or mobile'
+        message: 'User already exists with this email'
       });
     }
 
@@ -102,7 +130,6 @@ exports.register = async (req, res, next) => {
     const user = await User.create({
       name,
       email,
-      mobile,
       password,
       role: role || 'jobseeker',
       isVerified: true
@@ -114,23 +141,23 @@ exports.register = async (req, res, next) => {
   }
 };
 
-// Login with mobile and OTP
+// Login with email and OTP
 exports.login = async (req, res, next) => {
   try {
-    const { mobile, otp } = req.body;
+    const { email, otp } = req.body;
 
-    if (!mobile || !otp) {
+    if (!email || !otp) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide mobile and OTP'
+        message: 'Please provide email and OTP'
       });
     }
 
     // Verify OTP
-    await OTPLog.verifyOTP(mobile, otp, 'login');
+    await OTPLog.verifyOTP(email, otp, 'login');
 
     // Find user
-    const user = await User.findOne({ mobile });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(401).json({
@@ -148,26 +175,23 @@ exports.login = async (req, res, next) => {
 
     sendTokenResponse(user, 200, res);
   } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: error.message
-    });
+    next(error);
   }
 };
 
 // Login with password (alternative)
 exports.loginWithPassword = async (req, res, next) => {
   try {
-    const { mobile, password } = req.body;
+    const { email, password } = req.body;
 
-    if (!mobile || !password) {
+    if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide mobile and password'
+        message: 'Please provide email and password'
       });
     }
 
-    const user = await User.findOne({ mobile }).select('+password');
+    const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
       return res.status(401).json({
@@ -258,26 +282,31 @@ exports.googleAuth = async (req, res, next) => {
 // Forgot password
 exports.forgotPassword = async (req, res, next) => {
   try {
-    const { mobile } = req.body;
+    const { email } = req.body;
+    const ip = req.ip || req.connection.remoteAddress;
 
-    const user = await User.findOne({ mobile });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'No user found with this mobile number'
+        message: 'No user found with this email'
       });
     }
 
-    // Generate OTP for password reset
-    const otpLog = await OTPLog.createOTP(mobile, 'forgot-password');
+    // Generate and send OTP for password reset
+    const otpLog = await OTPLog.createOTP(email, 'forgot-password', ip);
 
-    console.log(`Password Reset OTP for ${mobile}: ${otpLog.otp}`);
+    try {
+      await sendOTP(email, otpLog.otp);
+    } catch (emailError) {
+      await OTPLog.deleteOne({ _id: otpLog._id });
+      throw new Error('Failed to send OTP email. Please try again.');
+    }
 
     res.status(200).json({
       success: true,
-      message: 'OTP sent for password reset',
-      otp: otpLog.otp
+      message: 'OTP sent to your email for password reset'
     });
   } catch (error) {
     next(error);
@@ -287,12 +316,19 @@ exports.forgotPassword = async (req, res, next) => {
 // Reset password
 exports.resetPassword = async (req, res, next) => {
   try {
-    const { mobile, otp, password } = req.body;
+    const { email, otp, password } = req.body;
+
+    if (!email || !otp || !password) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide email, OTP and new password'
+      });
+    }
 
     // Verify OTP
-    await OTPLog.verifyOTP(mobile, otp, 'forgot-password');
+    await OTPLog.verifyOTP(email, otp, 'forgot-password');
 
-    const user = await User.findOne({ mobile });
+    const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(404).json({
@@ -309,10 +345,7 @@ exports.resetPassword = async (req, res, next) => {
       message: 'Password reset successfully'
     });
   } catch (error) {
-    res.status(400).json({
-      success: false,
-      message: error.message
-    });
+    next(error);
   }
 };
 
@@ -366,6 +399,14 @@ const sendTokenResponse = (user, statusCode, res) => {
     mobile: user.mobile,
     role: user.role,
     profilePhoto: user.profilePhoto,
+    bio: user.bio,
+    location: user.location,
+    skills: user.skills,
+    education: user.education,
+    experience: user.experience,
+    socialLinks: user.socialLinks,
+    resume: user.resume,
+    companyDetails: user.companyDetails,
     isVerified: user.isVerified
   };
 

@@ -2,9 +2,13 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { FiMapPin, FiBriefcase, FiClock, FiDollarSign, FiSave, FiShare2, FiArrowLeft, FiEye } from 'react-icons/fi';
+import { FiMapPin, FiBriefcase, FiClock, FiDollarSign, FiSave, FiShare2, FiArrowLeft, FiEye, FiX } from 'react-icons/fi';
 import { jobAPI, applicationAPI, userAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import ApplyJob from '../components/jobs/ApplyJob';
+import ShareJob from '../components/common/ShareJob';
+
+
 
 const JobDetails = () => {
   const { id } = useParams();
@@ -227,44 +231,22 @@ const JobDetails = () => {
                   </Link>
                 </div>
               ) : (
-                <>
-                  {job.applyLink ? (
-                    <a
-                      href={job.applyLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-primary w-full py-3 mb-4"
-                    >
-                      Apply on {job.source?.toUpperCase()}
-                    </a>
-                  ) : (
-                    <button
-                      onClick={handleApply}
-                      disabled={applying || !isAuthenticated}
-                      className="btn btn-primary w-full py-3 mb-4"
-                    >
-                      {applying ? 'Applying...' : 'Apply Now'}
-                    </button>
-                  )}
-
-                  {!isAuthenticated && (
-                    <p className="text-sm text-center text-gray-500 mb-4">
-                      <Link to="/login" className="text-primary-600 hover:underline">
-                        Login
-                      </Link>{' '}
-                      to apply for this job
-                    </p>
-                  )}
-                </>
+                <div className="mb-4">
+                  <ApplyJob 
+                    job={job} 
+                    onClose={() => {}} 
+                    onSuccess={fetchJobDetails}
+                  />
+                </div>
               )}
+
+
 
               <div className="space-y-3">
                 <button onClick={handleSaveJob} className="btn btn-outline w-full flex items-center justify-center gap-2">
                   <FiSave /> {isSaved ? 'Saved' : 'Save Job'}
                 </button>
-                <button className="btn btn-secondary w-full flex items-center justify-center gap-2">
-                  <FiShare2 /> Share Job
-                </button>
+                <ShareJob job={job} />
               </div>
 
               {/* Company Info */}

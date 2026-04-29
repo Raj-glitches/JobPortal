@@ -35,8 +35,8 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, [token]);
 
-  const login = async (mobile, otp) => {
-    const response = await authAPI.login(mobile, otp);
+  const login = async (email, otp) => {
+    const response = await authAPI.login(email, otp);
     const { token: newToken, user: userData } = response.data;
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(userData));
@@ -45,8 +45,8 @@ export const AuthProvider = ({ children }) => {
     return response.data;
   };
 
-  const loginWithPassword = async (mobile, password) => {
-    const response = await authAPI.loginWithPassword(mobile, password);
+  const loginWithPassword = async (email, password) => {
+    const response = await authAPI.loginWithPassword(email, password);
     const { token: newToken, user: userData } = response.data;
     localStorage.setItem('token', newToken);
     localStorage.setItem('user', JSON.stringify(userData));

@@ -44,9 +44,18 @@ exports.getJobs = async (req, res, next) => {
       query.experience = experience;
     }
 
+    // ✅ Fixed Salary Range Overlap Filter
     if (salaryMin || salaryMax) {
-      query['salary.min'] = { $gte: Number(salaryMin || 0) };
-      query['salary.max'] = { $lte: Number(salaryMax || Number.MAX_VALUE) };
+      const salaryConditions = [];
+      if (salaryMin) {
+        salaryConditions.push({ 'salary.max': { $gte: Number(salaryMin) } });
+      }
+      if (salaryMax) {
+        salaryConditions.push({ 'salary.min': { $lte: Number(salaryMax) } });
+      }
+      if (salaryConditions.length > 0) {
+        query.$and = query.$and ? [...query.$and, ...salaryConditions] : salaryConditions;
+      }
     }
 
     if (skills) {

@@ -8,10 +8,10 @@ import { authAPI } from '../services/api';
 
 const Login = () => {
   const [isOTPFlow, setIsOTPFlow] = useState(true);
-  const [mobile, setMobile] = useState('');
+  const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
-  const [step, setStep] = useState(1); // 1: mobile, 2: OTP/password
+  const [step, setStep] = useState(1); // 1: email, 2: OTP/password
   const [loading, setLoading] = useState(false);
   const { login, loginWithPassword, googleLogin } = useAuth();
   const navigate = useNavigate();
@@ -21,15 +21,15 @@ const Login = () => {
 
   const handleSendOTP = async (e) => {
     e.preventDefault();
-    if (!mobile || mobile.length !== 10) {
-      toast.error('Please enter a valid 10-digit mobile number');
+    if (!email || !/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(email)) {
+      toast.error('Please enter a valid email address');
       return;
     }
 
     setLoading(true);
     try {
-      await authAPI.sendOTP(mobile, 'login');
-      toast.success('OTP sent to your mobile number');
+      await authAPI.sendOTP(email, 'login');
+      toast.success('OTP sent to your email');
       setStep(2);
     } catch (error) {
       toast.error(error.response?.data?.message || 'Failed to send OTP');
@@ -46,7 +46,7 @@ const Login = () => {
 
     setLoading(true);
     try {
-      await login(mobile, otp);
+      await login(email, otp);
       toast.success('Login successful!');
       navigate(from, { replace: true });
     } catch (error) {
@@ -57,14 +57,14 @@ const Login = () => {
 
   const handlePasswordLogin = async (e) => {
     e.preventDefault();
-    if (!mobile || !password) {
-      toast.error('Please enter mobile number and password');
+    if (!email || !password) {
+      toast.error('Please enter email and password');
       return;
     }
 
     setLoading(true);
     try {
-      await loginWithPassword(mobile, password);
+      await loginWithPassword(email, password);
       toast.success('Login successful!');
       navigate(from, { replace: true });
     } catch (error) {
@@ -121,16 +121,15 @@ const Login = () => {
           {step === 1 ? (
             <form onSubmit={isOTPFlow ? handleSendOTP : handlePasswordLogin}>
               <div className="mb-4">
-                <label className="label">Mobile Number</label>
+                <label className="label">Email Address</label>
                 <div className="relative">
-                  <FiPhone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <FiMail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
-                    type="tel"
-                    placeholder="Enter 10-digit mobile number"
-                    value={mobile}
-                    onChange={(e) => setMobile(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    type="email"
+                    placeholder="Enter your email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="input pl-12"
-                    maxLength={10}
                   />
                 </div>
               </div>
@@ -167,7 +166,7 @@ const Login = () => {
                   onClick={() => setStep(1)}
                   className="flex items-center gap-2 text-sm text-gray-500 hover:text-primary-600 mb-4"
                 >
-                  <FiArrowLeft /> Change mobile number
+                  <FiArrowLeft /> Change email
                 </button>
                 <label className="label">Enter OTP</label>
                 <div className="relative">
@@ -180,7 +179,7 @@ const Login = () => {
                     maxLength={6}
                   />
                 </div>
-                <p className="text-sm text-gray-500 mt-2">OTP sent to {mobile}</p>
+                <p className="text-sm text-gray-500 mt-2">OTP sent to {email}</p>
               </div>
 
               <button

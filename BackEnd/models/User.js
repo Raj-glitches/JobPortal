@@ -14,13 +14,13 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide an email'],
     unique: true,
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please provide a valid email']
+    match: [/^[^\s@]+@[^\s@]+\.[^\s@]+$/, 'Please provide a valid email']
   },
   mobile: {
     type: String,
-    required: [true, 'Please provide a mobile number'],
     unique: true,
-    match: [/^[6-9]\d{9}$/, 'Please provide a valid mobile number']
+    match: [/^[6-9]\d{9}$/, 'Please provide a valid mobile number'],
+    sparse: true
   },
   password: {
     type: String,
@@ -90,6 +90,13 @@ const userSchema = new mongoose.Schema({
     industry: String,
     foundedYear: Number
   },
+
+  socialLinks: {
+    linkedin: { type: String, default: '' },
+    github: { type: String, default: '' },
+    portfolio: { type: String, default: '' }
+  },
+
   savedJobs: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Job'

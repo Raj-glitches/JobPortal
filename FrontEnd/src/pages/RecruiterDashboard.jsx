@@ -20,8 +20,10 @@ const RecruiterDashboard = () => {
     jobType: 'full-time',
     experience: '1-3',
     skills: '',
-    salaryMin: '',
-    salaryMax: ''
+    salary: {
+      min: '',
+      max: ''
+    }
   });
 
   useEffect(() => {
@@ -45,6 +47,13 @@ const RecruiterDashboard = () => {
 
   const handlePostJob = async (e) => {
     e.preventDefault();
+    
+    // Check company profile
+    if (!user.companyDetails?.companyName) {
+      toast.error('Please complete your company profile first in Profile page');
+      return;
+    }
+    
     try {
       await jobAPI.createJob({
         ...newJob,
@@ -59,8 +68,10 @@ const RecruiterDashboard = () => {
         jobType: 'full-time',
         experience: '1-3',
         skills: '',
-        salaryMin: '',
-        salaryMax: ''
+        salary: {
+          min: '',
+          max: ''
+        }
       });
       fetchData();
     } catch (error) {
@@ -175,7 +186,7 @@ const RecruiterDashboard = () => {
                             <Link to={`/jobs/${job._id}`} className="btn btn-outline text-sm">
                               <FiEye className="w-4 h-4" />
                             </Link>
-                            <Link to={`/recruiter/jobs/${job._id}/applicants`} className="btn btn-outline text-sm">
+                            <Link to={`/recruiter/job-applicants/${job._id}`} className="btn btn-outline text-sm">
                               <FiUsers className="w-4 h-4" />
                             </Link>
                             <button onClick={() => handleDeleteJob(job._id)} className="btn btn-outline text-sm text-red-600">
@@ -322,11 +333,12 @@ const RecruiterDashboard = () => {
                       />
                     </div>
                     <div>
+
                       <label className="label">Min Salary (LPA)</label>
                       <input
                         type="number"
-                        value={newJob.salaryMin}
-                        onChange={(e) => setNewJob({ ...newJob, salaryMin: e.target.value })}
+                        value={newJob.salary.min}
+                        onChange={(e) => setNewJob({ ...newJob, salary: { ...newJob.salary, min: e.target.value } })}
                         className="input"
                       />
                     </div>
@@ -334,8 +346,8 @@ const RecruiterDashboard = () => {
                       <label className="label">Max Salary (LPA)</label>
                       <input
                         type="number"
-                        value={newJob.salaryMax}
-                        onChange={(e) => setNewJob({ ...newJob, salaryMax: e.target.value })}
+                        value={newJob.salary.max}
+                        onChange={(e) => setNewJob({ ...newJob, salary: { ...newJob.salary, max: e.target.value } })}
                         className="input"
                       />
                     </div>

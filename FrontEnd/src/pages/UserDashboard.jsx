@@ -287,8 +287,8 @@ const UserDashboard = () => {
                       <p className="font-medium text-gray-900 dark:text-white">{profile?.email}</p>
                     </div>
                     <div>
-                      <label className="text-sm text-gray-500">Mobile</label>
-                      <p className="font-medium text-gray-900 dark:text-white">{profile?.mobile}</p>
+                      <label className="text-sm text-gray-500">Email</label>
+                      <p className="font-medium text-gray-900 dark:text-white">{profile?.email}</p>
                     </div>
                     <div>
                       <label className="text-sm text-gray-500">Location</label>

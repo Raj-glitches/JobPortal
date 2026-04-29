@@ -6,7 +6,13 @@ const Notification = require('../models/Notification');
 // Get user profile
 exports.getProfile = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id)
+      .select('-password')
+      .populate({
+        path: 'savedJobs',
+        match: { status: 'approved' },
+        select: 'title companyName location salary jobType experience skills status createdAt'
+      });
 
     if (!user) {
       return res.status(404).json({
@@ -29,7 +35,7 @@ exports.updateProfile = async (req, res, next) => {
   try {
     const allowedFields = [
       'name', 'email', 'bio', 'location', 'skills',
-      'education', 'experience'
+      'education', 'experience', 'socialLinks'
     ];
 
     const updates = {};
@@ -43,7 +49,7 @@ exports.updateProfile = async (req, res, next) => {
       req.user.id,
       updates,
       { new: true, runValidators: true }
-    );
+    ).select('-password');
 
     res.status(200).json({
       success: true,
@@ -90,24 +96,37 @@ exports.uploadProfilePhoto = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload a file'
+        message: 'Please upload an image file'
       });
+    }
+
+    // Delete old photo from Cloudinary if exists
+    const currentUser = await User.findById(req.user.id);
+    if (currentUser.profilePhoto && currentUser.profilePhoto.includes('cloudinary')) {
+      try {
+        const publicId = currentUser.profilePhoto.split('/').pop().split('.')[0];
+        const cloudinary = require('../config/cloudinary');
+        await cloudinary.uploader.destroy(`jobportal/profiles/${publicId}`);
+      } catch (err) {
+        console.log('Failed to delete old photo:', err.message);
+      }
     }
 
     const user = await User.findByIdAndUpdate(
       req.user.id,
       { profilePhoto: req.file.path },
       { new: true }
-    );
+    ).select('-password');
 
     res.status(200).json({
       success: true,
-      data: user.profilePhoto
+      data: user.profilePhoto,
+      message: 'Profile photo uploaded successfully'
     });
   } catch (error) {
     next(error);
   }
-};
+}
 
 // Upload resume
 exports.uploadResume = async (req, res, next) => {
@@ -115,8 +134,19 @@ exports.uploadResume = async (req, res, next) => {
     if (!req.file) {
       return res.status(400).json({
         success: false,
-        message: 'Please upload a file'
+        message: 'Please upload a PDF, DOC, or DOCX file'
       });
+    }
+
+    // Delete old resume from Cloudinary if exists
+    const currentUser = await User.findById(req.user.id);
+    if (currentUser.resume?.publicId) {
+      try {
+        const cloudinary = require('../config/cloudinary');
+        await cloudinary.uploader.destroy(currentUser.resume.publicId, { resource_type: 'raw' });
+      } catch (err) {
+        console.log('Failed to delete old resume:', err.message);
+      }
     }
 
     const user = await User.findByIdAndUpdate(
@@ -128,11 +158,12 @@ exports.uploadResume = async (req, res, next) => {
         }
       },
       { new: true }
-    );
+    ).select('-password');
 
     res.status(200).json({
       success: true,
-      data: user.resume
+      data: user.resume,
+      message: 'Resume uploaded successfully'
     });
   } catch (error) {
     next(error);
@@ -281,4 +312,3 @@ exports.getPublicProfile = async (req, res, next) => {
     next(error);
   }
 };
-
