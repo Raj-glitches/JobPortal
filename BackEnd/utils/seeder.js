@@ -68,7 +68,7 @@ const createDefaultAdmin = async () => {
     return;
   }
 
-  const hashedPassword = await bcrypt.hash('admin123', 10);
+  const hashedPassword = await bcrypt.hash('Admin123', 10);
   const admin = new User({
     name: 'Admin',
     email: 'admin@gmail.com',
@@ -78,7 +78,7 @@ const createDefaultAdmin = async () => {
   });
 
   await admin.save();
-  console.log('Default admin created: admin@gmail.com / admin123');
+  console.log('Default admin created: admin@gmail.com / Admin123');
 };
 
 const seedJobs = async () => {
